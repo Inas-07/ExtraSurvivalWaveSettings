@@ -44,8 +44,13 @@ namespace ExtraSurvivalWaveSettings
             // spawn type override 
             if (waveSettingDB.m_overrideWaveSpawnType == true)
             {
-                if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNodeZone
-                    || waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode)
+                if (waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNodeZone
+                    && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode)
+                {
+                    spawnType = waveSettingDB.m_survivalWaveSpawnType;
+                }
+
+                else
                 {
                     if (Builder.CurrentFloor.TryGetZoneByLocalIndex(e.DimensionIndex, e.Layer, e.LocalIndex, out var zone) && zone != null)
                     {
