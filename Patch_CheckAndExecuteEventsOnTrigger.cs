@@ -3,10 +3,9 @@ using GameData;
 using System.Collections;
 using Player;
 using UnityEngine;
-using ExtraSurvivalWaveSettings;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 
-namespace LEGACY
+namespace ExtraSurvivalWaveSettings
 {
     [HarmonyPatch]
     class Patch_CheckAndExecuteEventsOnTrigger
