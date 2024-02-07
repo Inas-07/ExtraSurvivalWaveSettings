@@ -4,6 +4,7 @@ using System.Collections;
 using Player;
 using UnityEngine;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
+using AK;
 
 namespace ExtraSurvivalWaveSettings
 {
@@ -83,6 +84,7 @@ namespace ExtraSurvivalWaveSettings
                         // vanilla 
                         WardenObjectiveManager.StopAlarms();
                         WardenObjectiveManager.StopAllWardenObjectiveEnemyWaves();
+                        WardenObjectiveManager.Current.m_sound.Post(EVENTS.ALARM_AMBIENT_STOP);
                         SurvivalWaveManager.Current.OnStopAllWave();
                     }
                     else

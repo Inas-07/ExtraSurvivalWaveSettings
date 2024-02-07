@@ -7,6 +7,7 @@ using GTFO.API;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using AK;
+using UnityEngine;
 
 namespace ExtraSurvivalWaveSettings
 {
@@ -19,14 +20,14 @@ namespace ExtraSurvivalWaveSettings
 
         public void SpawnWave(WardenObjectiveEventData e)
         {
+            if (!SNet.IsMaster) return;
             PlayerAgent localPlayer = PlayerManager.GetLocalPlayerAgent();
-            if(localPlayer == null)
+            if (localPlayer == null)
             {
                 ESWSLogger.Error("SpawnWave: LocalPlayerAgent is null, wtf?");
                 return;
             }
 
-            if (!SNet.IsMaster) return; 
             GenericEnemyWaveData waveData = e.EnemyWaveData;
             if (waveData.WaveSettings == 0 || waveData.WavePopulation == 0)
             {
@@ -40,12 +41,15 @@ namespace ExtraSurvivalWaveSettings
 
             AIG_CourseNode spawnNode = localPlayer.CourseNode;
             SurvivalWaveSpawnType spawnType = SurvivalWaveSpawnType.InRelationToClosestAlivePlayer;
+            Vector3 spawnPosition = Vector3.zero;
 
             // spawn type override 
             if (waveSettingDB.m_overrideWaveSpawnType == true)
             {
                 if (waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNodeZone
-                    && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode)
+                    && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode
+                    && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition
+                    )
                 {
                     spawnType = waveSettingDB.m_survivalWaveSpawnType;
                 }
@@ -57,16 +61,21 @@ namespace ExtraSurvivalWaveSettings
                         spawnNode = zone.m_courseNodes[0];
                         spawnType = SurvivalWaveSpawnType.InSuppliedCourseNodeZone;
 
-                        if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode)
+                        if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode || waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition)
                         {
                             if (e.Count < zone.m_courseNodes.Count)
                             {
                                 spawnNode = zone.m_courseNodes[e.Count];
                                 spawnType = SurvivalWaveSpawnType.InSuppliedCourseNode;
+                                if(waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition)
+                                {
+                                    spawnPosition = e.Position;
+                                    spawnType = SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition; 
+                                }
                             }
                             else
                             {
-                                ESWSLogger.Error($"SpawnWave: SpawnType InSuppliedCourseNode is specified but cannot find AREA_{(char)('A' + e.Count)} in ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}), falling back to SpawnType: InSuppliedCourseNodeZone");
+                                ESWSLogger.Error($"SpawnWave: SpawnType InSuppliedCourseNode(_OnPosition) is specified but cannot find AREA_{(char)('A' + e.Count)} in ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}), falling back to SpawnType: InSuppliedCourseNodeZone");
                             }
                         }
                     }
@@ -79,13 +88,19 @@ namespace ExtraSurvivalWaveSettings
 
             // start wave
             ushort eventID;
-            if (!Mastermind.Current.TriggerSurvivalWave(spawnNode, waveData.WaveSettings, waveData.WavePopulation, out eventID, spawnType, waveData.SpawnDelay, waveData.AreaDistance)) 
+            if (!Mastermind.Current.TriggerSurvivalWave(
+                spawnNode, waveData.WaveSettings, waveData.WavePopulation, 
+                out eventID, 
+                spawnType: spawnType, 
+                spawnDelay: waveData.SpawnDelay, 
+                position: spawnPosition,
+                areaDistance: waveData.AreaDistance)) 
             {
                 ESWSLogger.Error("SpawnWave: Critical ERROR! Failed spawning enemy wave");
                 return;
             }
 
-            //WardenObjectiveManager.RegisterSurvivalWaveID(eventID);
+            WardenObjectiveManager.RegisterSurvivalWaveID(eventID);
             ESWSLogger.Log($"SpawnWave: Enemy wave spawned ({spawnType}) with eventID {eventID}");
 
             if (waveData.TriggerAlarm)
@@ -107,6 +122,10 @@ namespace ExtraSurvivalWaveSettings
             else if (spawnType == SurvivalWaveSpawnType.InSuppliedCourseNode)
             {
                 ESWSLogger.Log($"Spawning in: ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}, AREA_{(char)('A' + e.Count)})");
+            }
+            else if (spawnType == SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition)
+            {
+                ESWSLogger.Log($"Spawning in: ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}, AREA_{(char)('A' + e.Count)}), position: {e.Position}");
             }
 
             string waveName = e.WorldEventObjectFilter;
