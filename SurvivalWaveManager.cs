@@ -17,6 +17,7 @@ namespace ExtraSurvivalWaveSettings
 
         // ISSUE: wave name are not registered on client side 
         private ConcurrentDictionary<string, List<ushort>> WaveEventsMap = new();
+        public Dictionary<uint, (SurvivalWaveSpawnType, int)> LateSpawnTypeOverrideMap = new();
 
         public void SpawnWave(WardenObjectiveEventData e)
         {
@@ -49,6 +50,7 @@ namespace ExtraSurvivalWaveSettings
                 if (waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNodeZone
                     && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode
                     && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition
+                    && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers
                     )
                 {
                     spawnType = waveSettingDB.m_survivalWaveSpawnType;
@@ -72,10 +74,14 @@ namespace ExtraSurvivalWaveSettings
                                     spawnPosition = e.Position;
                                     spawnType = SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition; 
                                 }
+                                else if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers)
+                                {
+                                    spawnType = SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers;
+                                }
                             }
                             else
                             {
-                                ESWSLogger.Error($"SpawnWave: SpawnType InSuppliedCourseNode(_OnPosition) is specified but cannot find AREA_{(char)('A' + e.Count)} in ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}), falling back to SpawnType: InSuppliedCourseNodeZone");
+                                ESWSLogger.Error($"SpawnWave: SpawnType {waveSettingDB.m_survivalWaveSpawnType} is specified but cannot find AREA_{(char)('A' + e.Count)} in ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}), falling back to SpawnType: InSuppliedCourseNodeZone");
                             }
                         }
                     }
@@ -127,6 +133,11 @@ namespace ExtraSurvivalWaveSettings
             {
                 ESWSLogger.Log($"Spawning in: ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}, AREA_{(char)('A' + e.Count)}), position: {e.Position}");
             }
+            else if (spawnType == SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers)
+            {
+                ESWSLogger.Log($"Spawning closest to: ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}, AREA_{(char)('A' + e.Count)})");
+                LateSpawnTypeOverrideMap.Add(eventID, (SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers, spawnNode.NodeID));
+            }
 
             string waveName = e.WorldEventObjectFilter;
             // check if wave is named
@@ -155,6 +166,7 @@ namespace ExtraSurvivalWaveSettings
             ESWSLogger.Debug($"StopNamedWaves: Stopping waves with name {waveName}, wave count: {eventIDList.Count}");
             eventIDList.ForEach(eventID =>
             {
+                LateSpawnTypeOverrideMap.Remove(eventID);
                 if (Mastermind.Current.TryGetEvent(eventID, out var masterMindEvent_StopWave))
                 {
                     masterMindEvent_StopWave.StopEvent();
@@ -168,12 +180,14 @@ namespace ExtraSurvivalWaveSettings
 
         internal void OnStopAllWave()
         {
-            WaveEventsMap.Clear();
+            // Clarity that it's referring to the below method.
+            this.Clear();
         }
 
         public void Clear()
         {
             WaveEventsMap.Clear();
+            LateSpawnTypeOverrideMap.Clear();
         }
 
         private SurvivalWaveManager() { }
