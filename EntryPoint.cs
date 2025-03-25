@@ -12,7 +12,7 @@ namespace ExtraSurvivalWaveSettings
     {
         public const string AUTHOR = "Inas";
         public const string PLUGIN_NAME = "ExtraSurvivalWaveSettings";
-        public const string VERSION = "1.1.1";
+        public const string VERSION = "1.1.2";
 
         private Harmony m_Harmony;
         

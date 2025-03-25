@@ -28,14 +28,27 @@ namespace ExtraSurvivalWaveSettings
                 return true;
 
             bool _override = false;
+            var e = eventToTrigger;
             // vanilla event modification
             switch (eventToTrigger.Type)
             {
                 case eWardenObjectiveEventType.SpawnEnemyWave:
+                    if (e.EnemyWaveData.WorldEventObjectFilterSpawnPoint != null && e.EnemyWaveData.WorldEventObjectFilterSpawnPoint.Length > 0)
+                    {
+                        _override = false;
+                    }
+                    else
+                    {
+                        _override = true;
+                        WorldEventManager.m_worldEventEventCoroutines.Add(
+                            CoroutineManager.StartCoroutine(Handle(eventToTrigger, 0.0f).WrapToIl2Cpp()));
+                    }
+                    break;
+
                 case eWardenObjectiveEventType.StopEnemyWaves:
                     _override = true;
-                    var coroutine = CoroutineManager.StartCoroutine(Handle(eventToTrigger, 0.0f).WrapToIl2Cpp());
-                    WorldEventManager.m_worldEventEventCoroutines.Add(coroutine);
+                    WorldEventManager.m_worldEventEventCoroutines.Add(
+                        CoroutineManager.StartCoroutine(Handle(eventToTrigger, 0.0f).WrapToIl2Cpp()));
                     break;
             }
 
