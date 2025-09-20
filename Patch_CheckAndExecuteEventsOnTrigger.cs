@@ -33,16 +33,16 @@ namespace ExtraSurvivalWaveSettings
             switch (eventToTrigger.Type)
             {
                 case eWardenObjectiveEventType.SpawnEnemyWave:
-                    if (e.EnemyWaveData.WorldEventObjectFilterSpawnPoint != null && e.EnemyWaveData.WorldEventObjectFilterSpawnPoint.Length > 0)
-                    {
-                        _override = false;
-                    }
-                    else
-                    {
+                    //if (e.EnemyWaveData.WorldEventObjectFilterSpawnPoint != null && e.EnemyWaveData.WorldEventObjectFilterSpawnPoint.Length > 0)
+                    //{
+                    //    _override = false;
+                    //}
+                    //else
+                    //{
                         _override = true;
                         WorldEventManager.m_worldEventEventCoroutines.Add(
                             CoroutineManager.StartCoroutine(Handle(eventToTrigger, 0.0f).WrapToIl2Cpp()));
-                    }
+                    //}
                     break;
 
                 case eWardenObjectiveEventType.StopEnemyWaves:

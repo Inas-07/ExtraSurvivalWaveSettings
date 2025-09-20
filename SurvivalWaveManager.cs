@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using AK;
 using UnityEngine;
 
+
 namespace ExtraSurvivalWaveSettings
 {
     public class SurvivalWaveManager
@@ -44,53 +45,62 @@ namespace ExtraSurvivalWaveSettings
             SurvivalWaveSpawnType spawnType = SurvivalWaveSpawnType.InRelationToClosestAlivePlayer;
             Vector3 spawnPosition = Vector3.zero;
 
-            // spawn type override 
-            if (waveSettingDB.m_overrideWaveSpawnType == true)
+
+            // WorldEventObjectFilterSpawnPoint speced - just do nothing but register the wave if it's named 
+            if (waveData.WorldEventObjectFilterSpawnPoint?.Length > 0)
             {
-                if (waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNodeZone
-                    && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode
-                    && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition
-                    && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers
-                    )
+                spawnType = waveSettingDB.m_survivalWaveSpawnType;
+            }
+            else 
+            {
+                if (waveSettingDB.m_overrideWaveSpawnType == true)
                 {
-                    spawnType = waveSettingDB.m_survivalWaveSpawnType;
-                }
-
-                else
-                {
-                    if (Builder.CurrentFloor.TryGetZoneByLocalIndex(e.DimensionIndex, e.Layer, e.LocalIndex, out var zone) && zone != null)
+                    if (waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNodeZone
+                        && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode
+                        && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition
+                        && waveSettingDB.m_survivalWaveSpawnType != SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers
+                        )
                     {
-                        spawnNode = zone.m_courseNodes[0];
-                        spawnType = SurvivalWaveSpawnType.InSuppliedCourseNodeZone;
-
-                        if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode || waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition)
-                        {
-                            if (e.Count < zone.m_courseNodes.Count)
-                            {
-                                spawnNode = zone.m_courseNodes[e.Count];
-                                spawnType = SurvivalWaveSpawnType.InSuppliedCourseNode;
-                                if(waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition)
-                                {
-                                    spawnPosition = e.Position;
-                                    spawnType = SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition; 
-                                }
-                                else if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers)
-                                {
-                                    spawnType = SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers;
-                                }
-                            }
-                            else
-                            {
-                                ESWSLogger.Error($"SpawnWave: SpawnType {waveSettingDB.m_survivalWaveSpawnType} is specified but cannot find AREA_{(char)('A' + e.Count)} in ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}), falling back to SpawnType: InSuppliedCourseNodeZone");
-                            }
-                        }
+                        spawnType = waveSettingDB.m_survivalWaveSpawnType;
                     }
+
                     else
                     {
-                        ESWSLogger.Error($"SpawnWave: Failed to find zone with GlobalIndex ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}), falling back to default spawn type");
+                        if (Builder.CurrentFloor.TryGetZoneByLocalIndex(e.DimensionIndex, e.Layer, e.LocalIndex, out var zone) && zone != null)
+                        {
+                            spawnNode = zone.m_courseNodes[0];
+                            spawnType = SurvivalWaveSpawnType.InSuppliedCourseNodeZone;
+
+                            if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode || waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition)
+                            {
+                                if (e.Count < zone.m_courseNodes.Count)
+                                {
+                                    spawnNode = zone.m_courseNodes[e.Count];
+                                    spawnType = SurvivalWaveSpawnType.InSuppliedCourseNode;
+                                    if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition)
+                                    {
+                                        spawnPosition = e.Position;
+                                        spawnType = SurvivalWaveSpawnType.InSuppliedCourseNode_OnPosition;
+                                    }
+                                    else if (waveSettingDB.m_survivalWaveSpawnType == SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers)
+                                    {
+                                        spawnType = SurvivalWaveSpawnType.ClosestToSuppliedNodeButNoBetweenPlayers;
+                                    }
+                                }
+                                else
+                                {
+                                    ESWSLogger.Error($"SpawnWave: SpawnType {waveSettingDB.m_survivalWaveSpawnType} is specified but cannot find AREA_{(char)('A' + e.Count)} in ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}), falling back to SpawnType: InSuppliedCourseNodeZone");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ESWSLogger.Error($"SpawnWave: Failed to find zone with GlobalIndex ({e.DimensionIndex}, {e.Layer}, {e.LocalIndex}), falling back to default spawn type");
+                        }
                     }
                 }
             }
+
 
             // start wave
             ushort eventID;
